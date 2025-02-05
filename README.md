@@ -74,8 +74,6 @@ install_users = create_ga4_request('firstUserSourceMedium', #newVsReturning
             )
 ```
 
-# 발표 자료 PDF
-
 # Release Notes
 
 # License
