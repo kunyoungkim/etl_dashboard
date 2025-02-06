@@ -31,6 +31,8 @@ etl_project/
 ├── load/                      # 데이터 적재 모듈
 │   ├── load_to_mysql.py       # 변환된 데이터를 MySQL에 적재
 │   └── load_utils.py          # 적재 관련 공통 유틸리티
+├── sql/
+│   ├── extract.sql            # 데이터 추출 쿼리
 ├── config/                    # 설정 파일
 │   └── db_config.json         # MySQL 및 데이터베이스 연결 설정
 └── main.py                    # 전체 ETL 파이프라인 실행
