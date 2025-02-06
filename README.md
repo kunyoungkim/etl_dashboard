@@ -83,4 +83,5 @@ install_users = create_ga4_request('firstUserSourceMedium', #newVsReturning
 # Release Notes
 
 # License
+[라이센스](https://github.com/kunyoungkim/etl_dashboard/tree/main?tab=MIT-1-ov-file)
 
