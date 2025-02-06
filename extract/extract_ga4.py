@@ -1,9 +1,12 @@
 from datetime import date, timedelta, datetime
 import pandas as pd
 from typing import Union, List, Optional
+from dateutil.relativedelta import relativedelta
+from dotenv import load_dotenv
 import os
 
 # GA4관련 라이브러리
+from google.analytics.data_v1beta.types import CohortSpec, CohortsRange, Cohort
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
     RunReportRequest,
@@ -17,7 +20,10 @@ from google.analytics.data_v1beta.types import (
 )
 from google.analytics.data_v1beta.types import Filter
 
-property_id = os.getenv('PROPERTY_ID')
+# .env 파일 로드
+load_dotenv()
+
+property_id = os.getenv('GA_PROPERTY_ID')
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
 def format_report_with_pagination(request, row_limit=100000, page_size=1000):
@@ -129,7 +135,7 @@ def create_ga4_request(
     # 결과 출력
     print(df.head())
     """
-    property_id = property_id
+    global property_id  # 전역 변수 사용 선언
 
     # dimensions와 metrics 처리
     if isinstance(dimensions, str):
@@ -162,57 +168,78 @@ def create_ga4_request(
 
     return format_report_with_pagination(request)
 
-# GA4 필터 함수
-def create_dimension_filter(field1: str, 
-                           values1: List[str], 
-                           field2: Optional[str] = None,  # Optional parameter
-                           values2: Optional[Union[str, List[str]]] = None,  # Optional parameter
-                           match_type1: Filter.StringFilter.MatchType = Filter.StringFilter.MatchType.EXACT, 
-                           match_type2: Filter.StringFilter.MatchType = Filter.StringFilter.MatchType.EXACT) -> FilterExpression:
+
+from typing import List, Optional, Union
+from google.analytics.data_v1beta.types import Filter, FilterExpression, FilterExpressionList
+
+def create_dimension_filter(
+    field1: str, 
+    values1: str, 
+    field2: Optional[str] = None,  
+    values2: Optional[Union[str, str]] = None,  
+    match_type1: Filter.StringFilter.MatchType = Filter.StringFilter.MatchType.EXACT, 
+    match_type2: Filter.StringFilter.MatchType = Filter.StringFilter.MatchType.EXACT,
+    exclude1: bool = False,
+    exclude2: bool = False
+) -> FilterExpression:
     """
-    플랫폼 및 화면 클래스를 기반으로 필터를 생성하는 함수. 필드 이름과 매치 타입도 동적으로 지정 가능.
-    platform_match_type과 screen_class_match_type의 기본값은 'EXACT'.
+    GA4 측정기준 필터를 동적으로 생성하는 함수.
 
     Args:
-    field1 (str): 측정기준 이름 (예: 'platform')
-    field2 (str): 측정기준 이름 (예: 'unifiedScreenClass')
-    values1 (List[str]): 필터링할 측정기준 값 목록 (예: ['iOS', 'Android'])
-    values2 (List[str]): 필터링할 측정기준 값 목록 (예: ['HomeVC', 'MainVC'])
-    match_type1 (Filter.StringFilter.MatchType): 플랫폼 필터의 매치 타입 (기본값: EXACT)
-    match_type2 (Filter.StringFilter.MatchType): 화면 클래스 필터의 매치 타입 (기본값: EXACT)
+    field1 (str): 필터링할 첫 번째 필드
+    values1 (List[str]): 첫 번째 필드의 필터 값 목록
+    field2 (str, optional): 필터링할 두 번째 필드 (기본값: None)
+    values2 (Union[str, List[str]], optional): 두 번째 필드의 필터 값 목록 (기본값: None)
+    match_type1 (Filter.StringFilter.MatchType): 첫 번째 필드의 매치 타입 (기본값: EXACT)
+    match_type2 (Filter.StringFilter.MatchType): 두 번째 필드의 매치 타입 (기본값: EXACT)
+    exclude1 (bool): 첫 번째 필터를 제외할지 여부 (기본값: False)
+    exclude2 (bool): 두 번째 필터를 제외할지 여부 (기본값: False)
 
     Returns:
     FilterExpression: GA4 요청에 사용할 필터 표현식
     """
     
-    # 단일 문자열인 경우 리스트로 변환
-    if isinstance(values1, str):
-        values1 = [values1]
-
-    # values2가 제공되지 않으면 None으로 설정
+    # values2가 None이면 빈 리스트로 변환
     if values2 is None:
         values2 = []
 
-    if isinstance(values2, str):
-        values2 = [values2]
+    # # 단일 문자열을 리스트로 변환
+    # if isinstance(values1, str):
+    #     values1 = [values1]
+    # if isinstance(values2, str):
+    #     values2 = [values2]
 
     # 필터1 생성
-    filter1 = FilterExpression(
+    filter1_expression = FilterExpression(
         or_group=FilterExpressionList(
             expressions=[
                 FilterExpression(
                     filter=Filter(
                         field_name=field1,
-                        string_filter=Filter.StringFilter(value=value, match_type=match_type1)
+                        string_filter=Filter.StringFilter(value=values1, match_type=match_type1)
                     )
-                ) for value in values1
+                )
             ]
         )
     )
 
-    # 두 번째 필터가 있는 경우에만 필터2 생성
+    # not 조건 필터1 생성
+    filter1_not_expression = FilterExpression(
+        not_expression =
+            FilterExpression(
+                filter=Filter(
+                    field_name=field1,
+                    string_filter=Filter.StringFilter(value=values1, match_type=match_type1)
+                )
+            )
+        )
+
+    # 필터1 적용
+    filter1 = filter1_not_expression if exclude1 else filter1_expression
+
+    # 필터2 생성 (필드가 존재하고 값이 있을 경우만)
     if field2 and values2:
-        filter2 = FilterExpression(
+        filter2_expression = FilterExpression(
             or_group=FilterExpressionList(
                 expressions=[
                     FilterExpression(
@@ -224,17 +251,209 @@ def create_dimension_filter(field1: str,
                 ]
             )
         )
-        # 두 필터를 결합
+
+        # not 조건 필터2 생성
+        filter2_not_expression = FilterExpression(
+            not_expression=FilterExpression(
+                or_group=FilterExpressionList(
+                    expressions=[
+                        FilterExpression(
+                            filter=Filter(
+                                field_name=field2,
+                                string_filter=Filter.StringFilter(value=value, match_type=match_type2)
+                            )
+                        ) for value in values2
+                    ]
+                )
+            )
+        )
+
+        filter2 = filter2_not_expression if exclude2 else filter2_expression
+
+        # 필터1과 필터2 결합
         combined_filter = FilterExpression(
             and_group=FilterExpressionList(
-                expressions=[
-                    filter1,
-                    filter2
-                ]
+                expressions=[filter1, filter2]
             )
         )
     else:
-        # 첫 번째 필터만 사용할 경우
         combined_filter = filter1
 
     return combined_filter
+
+
+# 리텐션 데이터
+def retention(platform: bool = False, date_format: str = 'day', end_offset: int = 1, before_month: int = 12):
+    """
+    Google Analytics 4 (GA4) 코호트 유지율 분xw석을 위한 함수.
+    
+    특정 기간 동안의 사용자 유지율을 일/주/월 단위로 분석할 수 있으며, 
+    플랫폼(디바이스)별 분석도 가능하다.
+
+    Parameters:
+    -----------
+    platform : bool, optional
+        True일 경우, 플랫폼(디바이스 카테고리)별로 데이터를 분석 (기본값: False)
+    
+    date_format : str, optional
+        유지율 분석 단위 설정 ('day', 'week', 'month' 중 선택, 기본값: 'day')
+    
+    end_offset : int, optional
+        유지율 분석 기간 설정 (예: 14일, 12주, 12개월 등, 기본값: 14)
+    
+    before_month : int, optional
+        분석 시작일 기준으로 몇 개월 전부터 데이터를 가져올지 설정 (기본값: 12개월)
+
+    Returns:
+    --------
+    pandas.DataFrame or dict of pandas.DataFrame
+        platform=False인 경우, 전체 데이터를 포함한 DataFrame을 반환.
+        platform=True인 경우, 각 디바이스별 DataFrame을 포함하는 딕셔너리를 반환.
+
+    Available Device Categories (platform=True):
+    --------------------------------------------
+    dict_keys([
+        'web / mobile', 'web / desktop', 'iOS / mobile', 'Android / mobile', 
+        'web / tablet', 'iOS / tablet', 'Android / tablet', 
+        'iOS / desktop', 'web / smart tv'
+    ])
+
+    Example:
+    --------
+    >>> df = retention(platform=False, date_format='month', end_offset=12, before_month=6)
+    >>> df.head()
+    
+    >>> device_dfs = retention(platform=True, date_format='week', end_offset=8, before_month=3)
+    >>> print(device_dfs.keys())  # 디바이스별 데이터 확인
+    """
+
+    # Google Analytics 4 속성 ID 설정
+    global property_id
+
+    # GA4 클라이언트 생성
+    client = BetaAnalyticsDataClient()
+    today = date.today()
+
+    if date_format == 'day':
+        freq = 'D'
+        cohort_demention = 'cohortNthDay'
+        granularity = 'DAILY'
+        col_name = 'Day'
+        dates = pd.date_range(f'{today - relativedelta(months=before_month)}', today, freq=freq)
+        cohort_labels = [date.strftime('%Y-%m-%d') for date in dates]
+        end_dates = [(date).strftime("%Y-%m-%d") for date in dates]
+        start_dates = [(date).strftime("%Y-%m-%d") for date in dates]
+    elif date_format == 'week':
+        freq = 'W-MON'  # 매주 월요일 기준
+        cohort_demention = 'cohortNthWeek'
+        granularity = 'WEEKLY'
+        col_name = 'Week'
+        dates = pd.date_range(today - relativedelta(months=before_month), today, freq=freq)
+        cohort_labels = [date.strftime('%Y-%m-%d') for date in dates]  # 각 주의 월요일
+        start_dates = [date.strftime('%Y-%m-%d') for date in dates]
+        # 종료일: 같은 주의 일요일 (월요일 + 6일)
+        end_dates = [(date + timedelta(days=6)).strftime('%Y-%m-%d') for date in dates]
+    elif date_format == 'month':
+        freq = 'MS'
+        cohort_demention = 'cohortNthMonth'
+        granularity = 'MONTHLY'
+        col_name = 'Month'
+        # 월 단위로 날짜 범위 설정
+        first_day_of_current_month = today.replace(day=1)
+        dates = pd.date_range(first_day_of_current_month - relativedelta(months=before_month), first_day_of_current_month, freq=freq)
+        cohort_labels = [date.strftime('%Y-%m') for date in dates]
+        start_dates = [(date - relativedelta(months=1)).strftime("%Y-%m-%d") for date in dates]
+        end_dates = [(date - timedelta(days=1)).strftime("%Y-%m-%d") for date in dates]
+
+    # Cohort 객체 생성
+    cohorts = [
+        Cohort(
+            name=label,
+            dimension='firstSessionDate',
+            date_range=DateRange(start_date=start, end_date=end)
+        )
+        for label, start, end in zip(cohort_labels, start_dates, end_dates)
+    ]
+
+    # 요청 생성 (platform 여부에 따라 다르게 설정)
+    dimensions = [
+        Dimension(name="cohort"),
+        Dimension(name=cohort_demention)
+    ]
+    
+    if platform:
+        dimensions.insert(0, Dimension(name="platformDeviceCategory"))
+
+    request = RunReportRequest(
+        property=f"properties/{property_id}",
+        dimensions=dimensions,
+        metrics=[
+            Metric(name="cohortActiveUsers")
+        ],
+        cohort_spec=CohortSpec(
+            cohorts=cohorts,
+            cohorts_range=CohortsRange(granularity=granularity, end_offset=end_offset),
+        )
+    )
+
+    # 요청 실행
+    response = client.run_report(request)
+
+    # DataFrame 준비
+    columns = ['cohort_date'] + [f'{col_name} {n}' for n in range(end_offset + 1)]
+
+    if platform:
+        device_category_dfs = {}
+
+        for row in response.rows:
+            platform_device_category = row.dimension_values[0].value
+            cohort_date = row.dimension_values[1].value  # YYYY-MM 형식으로 변환
+            date_index = int(row.dimension_values[2].value)
+            active_users = int(row.metric_values[0].value)
+
+            if platform_device_category not in device_category_dfs:
+                device_category_dfs[platform_device_category] = {col: [] for col in columns}
+
+            data = device_category_dfs[platform_device_category]
+
+            if cohort_date not in data['cohort_date']:
+                data['cohort_date'].append(cohort_date)
+                for col in columns[1:]:
+                    data[col].append(0)
+
+            data[f'{col_name} {date_index}'][data['cohort_date'].index(cohort_date)] = active_users
+
+        # 각 디바이스 카테고리별로 DataFrame 생성 및 정리
+        for category, data in device_category_dfs.items():
+            df = pd.DataFrame(data).set_index('cohort_date').sort_index()
+            device_category_dfs[category] = df
+        return device_category_dfs
+
+    else:
+        # 데이터 저장을 위한 딕셔너리 초기화
+        data = {}
+
+        for row in response.rows:
+            cohort_date = row.dimension_values[0].value  # YYYY-MM 형식으로 변환
+            date_index = int(row.dimension_values[1].value)
+            active_users = int(row.metric_values[0].value)
+
+            if cohort_date not in data:
+                data[cohort_date] = {}
+
+            data[cohort_date][date_index] = active_users
+
+        # 데이터프레임 변환
+        df = pd.DataFrame.from_dict(data, orient='index').fillna(0)
+
+        # 컬럼명 정리 (Month 0, Month 1, ..., Month 12)
+        df.columns = [f"{col_name} {col}" for col in df.columns]
+        df.index.name = "cohort_date"
+
+        # 컬럼 이름을 정렬
+        sorted_columns = sorted(df.columns, key=lambda x: int(x.split(" ")[1]))
+
+        # 정렬된 컬럼 순서로 데이터프레임 재정렬, 인덱스 내림차순으로 정렬
+        df = df[sorted_columns].sort_index()
+
+        return df

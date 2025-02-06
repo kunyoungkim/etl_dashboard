@@ -1,4 +1,12 @@
+pandas
 google-cloud-bigquery
 gspread 
 oauth2client
 mysql-connector-python
+db-dtypes
+python-dotenv
+python-dateutil
+google-analytics-data
+google-auth
+google-auth-oauthlib 
+google-auth-httplib2

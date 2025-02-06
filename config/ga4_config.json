@@ -1,0 +1,23 @@
+{
+    "default_start": 30,
+    "data_configs": [
+        {
+            "comment": "DAU",
+            "dimensions": "platformDeviceCategory",
+            "metrics": "activeUsers",
+            "filters": {
+                "field1": "platformDeviceCategory",
+                "values1": ["web / mobile", "web / desktop", "iOS / mobile", "Android / mobile", "web / tablet", "iOS / tablet", "Android / tablet"]
+            }
+        },
+        {
+            "comment": "MAU",
+            "dimensions": "platformDeviceCategory",
+            "metrics": "active28DayUsers",
+            "filters": {
+                "field1": "platformDeviceCategory",
+                "values1": ["web / mobile", "web / desktop", "iOS / mobile", "Android / mobile", "web / tablet", "iOS / tablet", "Android / tablet"]
+            }
+        }
+    ]
+}
