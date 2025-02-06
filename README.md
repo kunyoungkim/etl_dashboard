@@ -43,11 +43,15 @@ etl_project/
 
 | Funtions | Location | Description |
 | --- | --- | --- |
-| format_report_with_pagination | extract_ga4.py | For converting GA4 data to DataFrame |
-| calculate_date_range | extract_ga4.py | For calculating and return a date range |
-| create_ga4_request | extract_ga4.py | For fetching GA4 data as a DataFrame |
-| create_dimension_filter | extract_ga4.py | For creating a filter for dimensions |
-| extract_ga4_data | extract_ga4.py | For fetching data from GA4 API |
+| format_report_with_pagination | extract_ga4.py | 데이터를 데이터 프레임으로 변환해주는 함수 |
+| calculate_date_range | extract_ga4.py | 날짜 기준을 계산해주는 함수 |
+| create_ga4_request | extract_ga4.py | GA4 API를 호출한 데이터를 프레임형태로 반환하는 함수 |
+| create_dimension_filter | extract_ga4.py | 측정기준 필터 함수 |
+| retention | extract_ga4.py | 리텐션 데이터를 추출하는 함수 |
+| get_gspread_client | extract_sheets.py | 구글 시트 API 인증을 위한 gspread 클라이언트 생성 함수 |
+| fetch_data_from_google_sheet | extract_sheets.py | 구글 시트에서 데이터를 추출하는 함수 |
+| fetch_data_from_mysql | extract_mysql.py| MySQL에서 데이터를 추출하는 함수 |
+| fetch_data_from_bigquery | extract_bigquery.py | BigQuery에서 데이터를 추출하는 함수 |
 
 # 함수 상세 설명
 ## 1. extract_ga4.py
