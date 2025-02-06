@@ -7,18 +7,10 @@ import pandas as pd
 load_dotenv()
 
 # 환경 변수 불러오기
-mysql_host_peterpanz = os.getenv('MYSQL_HOST_PETERPANZ')
-mysql_user_peterpanz = os.getenv('MYSQL_USER_PETERPANZ')
-mysql_password_peterpanz = os.getenv('MYSQL_PASSWORD_PETERPANZ')
-mysql_database_peterpanz = os.getenv('MYSQL_DATABASE_PETERPANZ')
-mysql_database_dusedata = os.getenv('MYSQL_DATABASE_CAFE')
-mysql_database_peterpanz_marketing = os.getenv('MYSQL_DATABASE_PETERPANZ_MARKETING')
-
-mysql_host_marketing = os.getenv('MYSQL_HOST_MARKETING')
-mysql_user_marketing = os.getenv('MYSQL_USER_MARKETING')
-mysql_password_marketing = os.getenv('MYSQL_PASSWORD_MARKETING')
-mysql_database_marketing = os.getenv('MYSQL_DATABASE_MARKETING')
-
+mysql_host = os.getenv('MYSQL_HOST')
+mysql_user = os.getenv('MYSQL_USER')
+mysql_password_ = os.getenv('MYSQL_PASSWORD')
+mysql_database = os.getenv('MYSQL_DATABASE')
 
 
 def fetch_data_from_mysql(query, db_select, params=None):
@@ -35,41 +27,13 @@ def fetch_data_from_mysql(query, db_select, params=None):
     """
 
     # MySQL 데이터베이스 연결
-    if db_select == 'peterpanz':
-        connection = mysql.connector.connect(
-            host=mysql_host_peterpanz,
-            user=mysql_user_peterpanz,
-            password=mysql_password_peterpanz,
-            database=mysql_database_peterpanz
-        )
-
-    elif db_select == 'cafe': 
-        connection = mysql.connector.connect(
-            host=mysql_host_peterpanz,
-            user=mysql_user_peterpanz,
-            password=mysql_password_peterpanz,
-            database=mysql_database_dusedata
-        )
-                
-    elif db_select == 'marketing':
-        connection = mysql.connector.connect(
-            host=mysql_host_marketing,
-            user=mysql_user_marketing,
-            password=mysql_password_marketing,
-            database=mysql_database_marketing
-        )
-            
-    elif db_select == 'peterpanz_marketing':
-        connection = mysql.connector.connect(
-            host=mysql_host_peterpanz,
-            user=mysql_host_peterpanz,
-            password=mysql_host_peterpanz,
-            database=mysql_database_peterpanz_marketing
-        )
-            
-    else:
-        raise ValueError("유효하지 않은 데이터베이스 선택: 'peterpanz', 'cafe', 'marketing', 'peterpanz_marketing' 중 하나를 선택하세요.")
-            
+    connection = mysql.connector.connect(
+        host=mysql_host,
+        user=mysql_user,
+        password=mysql_password,
+        database=mysql_database
+    )
+ 
     # 커서 생성
     cursor = connection.cursor()
 
