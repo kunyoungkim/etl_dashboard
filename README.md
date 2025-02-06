@@ -2,7 +2,7 @@
 AAARRR 프레임워크에 따라 전사 OMTM과 팀별 KPI를 설정하고, 이를 매일 모니터링하며 목표 대비 달성률을 체크합니다. 이를 기반으로 피드백을 반복해 지표를 개선합니다. 
 
 # 프로젝트 상세 개요
-- Period : 2024.04.29 ~ 2024.06.28 
+- Period : 2024.08.12 ~ 2024.10.21
 - Programming Languages : Python(3.10.9), MySQL(8.0.31)
 - Cloud : Google Cloud Platform
 - Database : MySQL(8.0.31), BigQuery
